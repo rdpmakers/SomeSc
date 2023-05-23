@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# myservice         Start up myservice
+#
+# chkconfig: 2345 55 25
+# description: This's the description
+#
+# processname: myservice
+
+# Source function library
+if [ -e /lib/lsb/init-functions ]; then
+    . /lib/lsb/init-functions
+   log_success() {
+        log_success_msg "\$1"
+    }
+
+    log_failure() {
+        log_failure_msg "\$1"
+    }
+else
+    . /etc/rc.d/init.d/functions
+
+    log_success() {
+        echo_success
+        echo "\$1"
+    }
+
+    log_failure() {
+        echo_failure
+        echo "\$1"
+    }
+fi
+
+#the service name, a python script
+#SNAME=myservice
+
+#the full path and name of the daemon program
+#Warning: The name of executable file must be identical with service name
+#PROG=/usr/bin/$SNAME
+NAME=screen
+PIDFILE=/var/run/bro.pid
+
+
+# start function
+start() {
+        #check the daemon status first
+        echo "Starting \$NAME:"
+        export LC_CTYPE=en_US.UTF8
+
+        if pidofproc -p \$PIDFILE \$PANEL > /dev/null; then
+            log_failure "already running"
+            exit 1
+        fi
+        if \$DAEMON -d ; then
+            su -c "/usr/bin/screen -S pro" root
+            log_success "started"
+            
+        else
+            log_failure "failed"
+        fi
+}
+
+#stop function
+stop() {
+        echo "Stopping \$NAME:"
+        if pidofproc -p \$PIDFILE \$PANEL > /dev/null; then
+            su -c "/usr/bin/screen -XS pro quit" root
+            killproc -p \$PIDFILE \$PANEL
+            /bin/rm -rf \$PIDFILE
+            log_success "stopped"
+        else
+           log_failure "not running"
+        fi
+}
+
+case "$1" in
+start)
+  start
+  ;;
+stop)
+  stop
+  ;;
+reload|restart)
+  stop
+  start
+  ;;
+status)
+  #pid=`ps -ef | grep '[p]ython $PROG' | awk '{ print $2 }'`
+  if pidofproc -p \$PIDFILE \$PANEL > /dev/null; then
+      echo "$SNAME is stoped."
+  else
+      echo "$SNAME (pid $pid) is running..."
+  fi
+  ;;
+*)
+  echo $"\nUsage: $0 {start|stop|restart|status}"
+  exit 1
+esac
